@@ -18,7 +18,6 @@ import (
 
 func main() {
 	initApp()
-
 	app := fiber.New()
 
 	// Middleware: CORS

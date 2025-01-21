@@ -3,6 +3,7 @@ package repository
 import (
 	"database/sql"
 	"fmt"
+	"github.com/lib/pq"
 	"go.uber.org/zap"
 	"shop/configs/pg_conf"
 	"shop/internal/api/dto"
@@ -41,6 +42,7 @@ func (r *cardRepository) GetCardById(id int) (*[]model.CardRow, error) {
                n.created_at   AS "createdAt",
                n.updated_at   AS "updatedAt",
                n.removed_at   AS "removedAt",
+               COALESCE(string_to_array(n.images, ','), '{}') AS "images",
                nt.type        AS "nodeType",
                nt.description AS "nodeTypeDescription",
                c.title        AS characteristic,
@@ -72,6 +74,7 @@ func (r *cardRepository) GetCardById(id int) (*[]model.CardRow, error) {
 			&card.CreatedAt,
 			&card.UpdatedAt,
 			&card.RemovedAt,
+			pq.Array(&card.Images),
 			&card.NodeType,
 			&card.NodeTypeDescription,
 			&card.Characteristic,
@@ -152,6 +155,7 @@ func (r *cardRepository) GetAllCards(pageNumber, pageSize int, filters *[]model.
                n.created_at   AS "createdAt",
                n.updated_at   AS "updatedAt",
                n.removed_at   AS "removedAt",
+               COALESCE(string_to_array(n.images, ','), '{}') AS "images",
                nt.type        AS "nodeType",
                nt.description AS "nodeTypeDescription",
                c.title        AS "characteristic",
@@ -188,6 +192,7 @@ func (r *cardRepository) GetAllCards(pageNumber, pageSize int, filters *[]model.
 			&card.CreatedAt,
 			&card.UpdatedAt,
 			&card.RemovedAt,
+			pq.Array(&card.Images),
 			&card.NodeType,
 			&card.NodeTypeDescription,
 			&card.Characteristic,
@@ -301,14 +306,16 @@ func (r *cardRepository) CreateCard(dto *dto.CreateCardDTO) (int, error) {
 
 // insertNodeTx — вспомогательная функция, вставляет запись в shop.nodes.
 func (r *cardRepository) insertNodeTx(tx *sql.Tx, dto *dto.CreateCardDTO) (int, error) {
+	// Преобразуем массив изображений в строку через запятую
+	imagesString := strings.Join(dto.Images, ",")
 	const query = `
-		INSERT INTO shop.nodes (title, description, node_type_id)
-		VALUES ($1, $2, $3)
+		INSERT INTO shop.nodes (title, description, node_type_id, images)
+		VALUES ($1, $2, $3,$4)
 		RETURNING id
 	`
 
 	var newNodeID int
-	err := tx.QueryRow(query, dto.Title, dto.NodeDescription, dto.NodeTypeId).Scan(&newNodeID)
+	err := tx.QueryRow(query, dto.Title, dto.NodeDescription, dto.NodeTypeId, imagesString).Scan(&newNodeID)
 	if err != nil {
 		return 0, err
 	}

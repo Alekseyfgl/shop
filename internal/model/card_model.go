@@ -13,6 +13,7 @@ type CardRow struct {
 	CreatedAt                 string           `db:"createdAt" json:"createdAt"`
 	UpdatedAt                 string           `db:"updatedAt" json:"updatedAt"`
 	RemovedAt                 *string          `db:"removedAt" json:"removedAt"`
+	Images                    []string         `db:"images" json:"images"`
 	NodeType                  string           `db:"nodeType" json:"nodeType"`
 	NodeTypeDescription       *string          `db:"nodeTypeDescription" json:"nodeTypeDescription"`
 	Characteristic            string           `db:"characteristic" json:"characteristic"`
@@ -27,6 +28,7 @@ type CardResponse struct {
 	CreatedAt           string           `json:"createdAt"`
 	UpdatedAt           string           `json:"updatedAt"`
 	RemovedAt           *string          `json:"removedAt"`
+	Images              []string         `db:"images" json:"images"`
 	NodeType            string           `json:"nodeType"`
 	NodeTypeDescription *string          `json:"nodeTypeDescription"`
 	Characteristics     []Characteristic `json:"characteristics"`
@@ -80,6 +82,7 @@ func MapperCardResponse(rows *[]CardRow) ([]CardResponse, error) {
 				CreatedAt:           row.CreatedAt,
 				UpdatedAt:           row.UpdatedAt,
 				RemovedAt:           row.RemovedAt,
+				Images:              row.Images,
 				NodeType:            row.NodeType,
 				NodeTypeDescription: row.NodeTypeDescription,
 				Characteristics:     []Characteristic{addParam},
