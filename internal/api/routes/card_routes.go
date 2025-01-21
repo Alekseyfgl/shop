@@ -19,4 +19,8 @@ func RegisterCardRoutes(app *fiber.App) {
 		dto_validator.ValidateCreateCardMiddleware(),
 		handlers.CardHandler.CreateCard,
 	)
+	app.Post("/cards/search",
+		dto_validator.ValidateGetCardsByVectorMiddleware(),
+		handlers.CardHandler.GetCardsByVector,
+	)
 }

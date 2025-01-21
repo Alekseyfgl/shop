@@ -15,3 +15,8 @@ type CharDTO struct {
 	Value            string           `json:"value" validate:"required,min=1"`
 	AdditionalParams *json.RawMessage `json:"additionalParams"`
 }
+
+type GetCardsByVectorDTO struct {
+	Text  string `json:"text" validate:"required,min=1,max=200"`
+	Limit int    `json:"limit" validate:"required,number,min=1,max=20"`
+}

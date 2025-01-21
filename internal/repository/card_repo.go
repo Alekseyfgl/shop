@@ -20,6 +20,7 @@ type CardRepositoryInterface interface {
 	GetCardById(id int) (*[]model.CardRow, error)
 	GetAllCards(pageNumber, pageSize int, filters *[]model.CardFilter) (*[]model.CardRow, int, error)
 	CreateCard(dto *dto.CreateCardDTO) (int, error)
+	FindByVectorSearch(text string, limit int) (*[]model.CardRow, error)
 }
 
 // NewCardRepository создаёт новый экземпляр репозитория для работы с карточками.
@@ -27,9 +28,74 @@ func NewCardRepository() CardRepositoryInterface {
 	return &cardRepository{}
 }
 
-// Глобальная переменная, если где-то нужно быстро получить доступ к репозиторию.
-// Можно использовать вместо этого зависимость через DI.
 var CardRepo = NewCardRepository()
+
+func (r *cardRepository) FindByVectorSearch(text string, limit int) (*[]model.CardRow, error) {
+	if limit < 1 || limit > 20 {
+		limit = 10
+	}
+
+	query := `
+        SELECT
+            n.id           AS "nodeId",
+            n.title,
+            n.description  AS "nodeDescription",
+            n.created_at   AS "createdAt",
+            n.updated_at   AS "updatedAt",
+            n.removed_at   AS "removedAt",
+            COALESCE(string_to_array(n.images, ','), '{}') AS "images",
+            nt.type        AS "nodeType",
+            nt.description AS "nodeTypeDescription",
+            c.title        AS "characteristic",
+            cv.value       AS "characteristicValue",
+            cv.add_params  AS "additionalParams",
+            c.description  AS "characteristicDescription"
+        FROM shop.nodes n
+                 JOIN shop.node_types nt ON nt.id = n.node_type_id
+                 JOIN shop.characteristic_values cv ON n.id = cv.node_id
+                 JOIN shop.characteristics c ON c.id = cv.characteristic_id
+        WHERE n.search_vector @@ plainto_tsquery('russian', $1)
+        ORDER BY ts_rank_cd(n.search_vector, plainto_tsquery('russian', $1)) DESC
+        LIMIT $2
+    `
+
+	rows, err := pg_conf.GetDB().Query(query, text, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var cards []model.CardRow
+	for rows.Next() {
+		var card model.CardRow
+		if err := rows.Scan(
+			&card.NodeId,
+			&card.Title,
+			&card.NodeDescription,
+			&card.CreatedAt,
+			&card.UpdatedAt,
+			&card.RemovedAt,
+			pq.Array(&card.Images),
+			&card.NodeType,
+			&card.NodeTypeDescription,
+			&card.Characteristic,
+			&card.CharacteristicValue,
+			&card.AdditionalParams,
+			&card.CharacteristicDescription,
+		); err != nil {
+			log.Error("Failed to scan row in FindByVectorSearch", zap.Error(err))
+			return nil, err
+		}
+		cards = append(cards, card)
+	}
+
+	if err := rows.Err(); err != nil {
+		log.Error("Row iteration error in FindByVectorSearch", zap.Error(err))
+		return nil, err
+	}
+
+	return &cards, nil
+}
 
 // GetCardById возвращает список характеристик (CardRow) для заданного nodeId.
 func (r *cardRepository) GetCardById(id int) (*[]model.CardRow, error) {

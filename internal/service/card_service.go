@@ -16,6 +16,7 @@ type CardServiceInterface interface {
 	GetCardById(id int) (*model.CardResponse, error)
 	GetAllCards(pageNumber, pageSize int, filters *[]model.CardFilter) (*model.Paginate[model.CardResponse], error)
 	CreateCard(dto *dto.CreateCardDTO) (*model.CardResponse, error)
+	GetCardsByVector(dto *dto.GetCardsByVectorDTO) (*[]model.CardResponse, error)
 }
 
 func NewCardService() CardServiceInterface {
@@ -60,6 +61,21 @@ func (s *cardService) GetAllCards(pageNumber, pageSize int, filters *[]model.Car
 	}
 
 	return result, nil
+}
+
+func (s *cardService) GetCardsByVector(dto *dto.GetCardsByVectorDTO) (*[]model.CardResponse, error) {
+	cards, err := repository.CardRepo.FindByVectorSearch(dto.Text, dto.Limit)
+	if err != nil {
+		log.Error("Failed to fetch cards", zap.Error(err))
+		return nil, err
+	}
+
+	mappedCards, err := model.MapperCardResponse(cards)
+	if err != nil {
+		return nil, err
+	}
+
+	return &mappedCards, nil
 }
 
 func (s *cardService) CreateCard(dto *dto.CreateCardDTO) (*model.CardResponse, error) {

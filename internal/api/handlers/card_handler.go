@@ -17,6 +17,7 @@ type cardHandler struct{}
 type CardHandlerInterface interface {
 	GetCardById(c *fiber.Ctx) error
 	GetAllCards(c *fiber.Ctx) error
+	GetCardsByVector(c *fiber.Ctx) error
 	CreateCard(c *fiber.Ctx) error
 }
 
@@ -132,6 +133,26 @@ func (h *cardHandler) CreateCard(c *fiber.Ctx) error {
 	}
 
 	// 4. Возвращаем успешный результат
+	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
+		"id": newID,
+	})
+}
+
+func (h *cardHandler) GetCardsByVector(c *fiber.Ctx) error {
+	reqInterface := c.Locals("validatedBody")
+
+	body, ok := reqInterface.(dto.GetCardsByVectorDTO)
+	if !ok {
+		log.Error("Failed to retrieve validated request from context")
+		return http_error.NewHTTPError(fiber.StatusInternalServerError, "Internal Server Error", nil).Send(c)
+	}
+
+	newID, err := service.CardService.GetCardsByVector(&body)
+	if err != nil {
+		log.Error("Failed to get cards by vector", zap.Error(err))
+		return http_error.NewHTTPError(fiber.StatusInternalServerError, "Failed to get cards", nil).Send(c)
+	}
+
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
 		"id": newID,
 	})
