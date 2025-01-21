@@ -251,8 +251,8 @@ func buildWhereClause(filters []model.CardFilter) (string, []interface{}) {
 		return "", nil
 	}
 
-	// Объединяем все условия через OR
-	where := "WHERE " + strings.Join(conditions, " OR ")
+	// Объединяем все условия через AND
+	where := "WHERE " + strings.Join(conditions, " AND ")
 	return where, args
 }
 
