@@ -11,6 +11,11 @@ func RegisterCharDefaultValueRoutes(app *fiber.App) {
 		dto_validator.ValidatePaginationMiddleware(),
 		handlers.CharDefaultValueHandler.GetAllDefValue,
 	)
+
+	app.Get("/selectors/:id",
+		dto_validator.ValidateIdMiddleware(),
+		handlers.CharDefaultValueHandler.GetDefValueById,
+	)
 	app.Post("/selectors",
 		dto_validator.ValidateCreateCharDefaultValueMiddleware(),
 		handlers.CharDefaultValueHandler.CreateDefValue,

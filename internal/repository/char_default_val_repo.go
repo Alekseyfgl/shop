@@ -19,6 +19,7 @@ type CharDefaultValueInterface interface {
 	UpdateDefaultValue(size *dto.UpdateCharDefValueRequest) error
 	DeleteDefaultValueById(id int) error
 	GetDefaultValueById(id int) (*model.CharDefaultValueRow, error)
+	GetFullDefaultValueById(id int) (*[]model.CharDefaultValue, error)
 }
 
 func NewCharDefaultValueRepository() CharDefaultValueInterface {
@@ -82,6 +83,44 @@ func (r *charDefaultValueRepository) GetAllDefaultValues(pageNumber, pageSize in
 	}
 
 	return data, totalCount, nil
+}
+
+func (r *charDefaultValueRepository) GetFullDefaultValueById(id int) (*[]model.CharDefaultValue, error) {
+	db := pg_conf.GetDB()
+	query := `
+		SELECT cdv.id, cdv.characteristic_id, cdv.value, ch.title
+		FROM shop.char_default_value cdv
+		JOIN shop.characteristics ch ON ch.id = cdv.characteristic_id
+		WHERE ch.id = $1`
+
+	rows, err := db.Query(query, id)
+	if err != nil {
+		log.Error("Failed to execute query", zap.Error(err))
+		return nil, err
+	}
+	defer rows.Close()
+
+	var results []model.CharDefaultValue
+	for rows.Next() {
+		var result model.CharDefaultValue
+		if err := rows.Scan(&result.ID, &result.CharacteristicId, &result.Value, &result.Title); err != nil {
+			log.Error("Failed to scan row", zap.Error(err))
+			return nil, err
+		}
+		results = append(results, result)
+	}
+
+	if err := rows.Err(); err != nil {
+		log.Error("Error iterating over rows", zap.Error(err))
+		return nil, err
+	}
+
+	if len(results) == 0 {
+		log.Warn("No char_default_value found", zap.Int("id", id))
+		return nil, errors.New("no records found")
+	}
+
+	return &results, nil
 }
 
 func (r *charDefaultValueRepository) CreateDefaultValue(data *dto.CreateCharDefValueRequest) (int, error) {

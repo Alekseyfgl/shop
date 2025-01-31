@@ -13,6 +13,7 @@ type charDefaultValueService struct{}
 
 type CharDefaultValueServiceInterface interface {
 	GetAllDefValue(pageNumber, pageSize int) (*model.Paginate[model.CharDefaultValue], error)
+	GetDefValueById(id int) (*[]model.CharDefaultValue, error)
 	CreateDefValue(size *dto.CreateCharDefValueRequest) (*model.CharDefaultValueRow, error)
 	UpdateDefValue(size *dto.UpdateCharDefValueRequest) (*model.CharDefaultValueRow, error)
 	DeleteDefValueById(id int) error
@@ -41,6 +42,15 @@ func (s *charDefaultValueService) GetAllDefValue(pageNumber, pageSize int) (*mod
 	}
 
 	return result, nil
+}
+
+func (s *charDefaultValueService) GetDefValueById(id int) (*[]model.CharDefaultValue, error) {
+	defValues, err := repository.CharDefaultValueRepo.GetFullDefaultValueById(id)
+	if err != nil {
+		log.Error("Failed to fetch char_default_value", zap.Error(err))
+		return nil, err
+	}
+	return defValues, nil
 }
 
 func (s *charDefaultValueService) CreateDefValue(dto *dto.CreateCharDefValueRequest) (*model.CharDefaultValueRow, error) {

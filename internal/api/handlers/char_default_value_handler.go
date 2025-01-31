@@ -14,6 +14,7 @@ type charDefaultValueHandler struct{}
 
 type CharDefaultValueHandlerInterface interface {
 	GetAllDefValue(c *fiber.Ctx) error
+	GetDefValueById(c *fiber.Ctx) error
 	CreateDefValue(c *fiber.Ctx) error
 	UpdateDefValue(c *fiber.Ctx) error
 	DeleteDefValue(c *fiber.Ctx) error
@@ -107,4 +108,25 @@ func (h *charDefaultValueHandler) DeleteDefValue(c *fiber.Ctx) error {
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{"id": id})
+}
+
+func (h *charDefaultValueHandler) GetDefValueById(c *fiber.Ctx) error {
+	idStr, ok := c.Locals("Id").(string)
+	if !ok || idStr == "0" {
+		log.Error("ID is missing in the context")
+		return http_error.NewHTTPError(fiber.StatusInternalServerError, "ID is required", nil).Send(c)
+	}
+
+	defValId, err := utils.StringToInt(idStr)
+	if err != nil {
+		return http_error.NewHTTPError(fiber.StatusInternalServerError, err.Error(), nil).Send(c)
+	}
+
+	card, err := service.CharDefaultValueService.GetDefValueById(defValId)
+	if err != nil {
+		log.Error("Failed to find char_default_value", zap.Int("defValId", defValId), zap.Error(err))
+		return http_error.NewHTTPError(fiber.StatusInternalServerError, "Failed to find card", nil).Send(c)
+	}
+
+	return c.JSON(card)
 }
