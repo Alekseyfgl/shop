@@ -32,13 +32,15 @@ func main() {
 	//app.Use(middlewares.RequestLoggerMiddleware(container.Logger))
 	app.Use(middlewares.LimitQueryParamsMiddleware)
 
+	groupApi := app.Group("/api")
+
 	// Register routes
-	routes.RegisterSizeRoutes(app)
-	routes.RegisterCharacteristicRoutes(app)
-	routes.RegisterCharDefaultValueRoutes(app)
-	routes.RegisterNodeTypeRoutes(app)
-	routes.RegisterNodeRoutes(app)
-	routes.RegisterCardRoutes(app)
+	routes.RegisterSizeRoutes(groupApi)
+	routes.RegisterCharacteristicRoutes(groupApi)
+	routes.RegisterCharDefaultValueRoutes(groupApi)
+	routes.RegisterNodeTypeRoutes(groupApi)
+	routes.RegisterNodeRoutes(groupApi)
+	routes.RegisterCardRoutes(groupApi)
 
 	// Start the server
 	port := env.GetEnv("SERV_PORT", "3000")

@@ -60,27 +60,31 @@ func (r *characteristicRepository) GetAllCharacteristics(pageNumber, pageSize in
 	}()
 
 	scanFunc := func(rows *sql.Rows) (model.CharacteristicRow, error) {
-		var size model.CharacteristicRow
-		if err := rows.Scan(&size.ID, &size.Title, &size.Description); err != nil {
+		var char model.CharacteristicRow
+		if err := rows.Scan(&char.ID, &char.Title, &char.Description); err != nil {
 			return model.CharacteristicRow{}, err
 		}
-		return size, nil
+		return char, nil
 	}
 
-	sizes, err := utils.DecodeRows[model.CharacteristicRow](rows, scanFunc)
+	chars, err := utils.DecodeRows[model.CharacteristicRow](rows, scanFunc)
 	if err != nil {
 		log.Error("Failed to decode characteristics", zap.Error(err))
 		return nil, 0, err
 	}
 
-	return sizes, totalCount, nil
+	if chars == nil {
+		chars = make([]model.CharacteristicRow, 0)
+	}
+
+	return chars, totalCount, nil
 }
 
-func (r *characteristicRepository) CreateCharacteristics(size *dto.CreateCharacteristicRequest) (int, error) {
+func (r *characteristicRepository) CreateCharacteristics(data *dto.CreateCharacteristicRequest) (int, error) {
 	var insertedID int
 	err := pg_conf.GetDB().QueryRow(
 		"INSERT INTO shop.characteristics (title, description) VALUES ($1, $2) RETURNING id",
-		size.Title, size.Description,
+		data.Title, data.Description,
 	).Scan(&insertedID)
 
 	if err != nil {
@@ -90,10 +94,10 @@ func (r *characteristicRepository) CreateCharacteristics(size *dto.CreateCharact
 	return insertedID, nil
 }
 
-func (r *characteristicRepository) UpdateCharacteristics(size *model.CharacteristicRow) error {
+func (r *characteristicRepository) UpdateCharacteristics(data *model.CharacteristicRow) error {
 	_, err := pg_conf.GetDB().Exec(
 		"UPDATE shop.characteristics SET title = $1, description = $2 WHERE id = $3",
-		size.Title, size.Description, size.ID,
+		data.Title, data.Description, data.ID,
 	)
 	return err
 }
@@ -104,12 +108,12 @@ func (r *characteristicRepository) DeleteCharacteristicsById(id int) error {
 }
 
 func (r *characteristicRepository) GetCharacteristicsById(id int) (*model.CharacteristicRow, error) {
-	var size model.CharacteristicRow
+	var char model.CharacteristicRow
 
 	err := pg_conf.GetDB().QueryRow(
 		"SELECT id, title, description FROM shop.characteristics WHERE id = $1",
 		id,
-	).Scan(&size.ID, &size.Title, &size.Description)
+	).Scan(&char.ID, &char.Title, &char.Description)
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -120,7 +124,7 @@ func (r *characteristicRepository) GetCharacteristicsById(id int) (*model.Charac
 		return nil, err
 	}
 
-	return &size, nil
+	return &char, nil
 }
 
 func (r *characteristicRepository) CheckCharsByIds(ids []int) error {

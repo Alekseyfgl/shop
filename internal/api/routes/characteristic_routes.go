@@ -6,7 +6,7 @@ import (
 	"shop/internal/api/middlewares/validator/dto_validator"
 )
 
-func RegisterCharacteristicRoutes(app *fiber.App) {
+func RegisterCharacteristicRoutes(app fiber.Router) {
 	app.Get("/characteristics",
 		dto_validator.ValidatePaginationMiddleware(),
 		handlers.CharacteristicHandler.GetAllCharacteristics,

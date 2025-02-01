@@ -6,7 +6,7 @@ import (
 	"shop/internal/api/middlewares/validator/dto_validator"
 )
 
-func RegisterCharDefaultValueRoutes(app *fiber.App) {
+func RegisterCharDefaultValueRoutes(app fiber.Router) {
 	app.Get("/selectors",
 		dto_validator.ValidatePaginationMiddleware(),
 		handlers.CharDefaultValueHandler.GetAllDefValue,

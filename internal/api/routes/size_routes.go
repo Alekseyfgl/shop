@@ -6,7 +6,7 @@ import (
 	"shop/internal/api/middlewares/validator/dto_validator"
 )
 
-func RegisterSizeRoutes(app *fiber.App) {
+func RegisterSizeRoutes(app fiber.Router) {
 	app.Get("/sizes",
 		dto_validator.ValidatePaginationMiddleware(),
 		handlers.SizeHandler.GetAllSizes,

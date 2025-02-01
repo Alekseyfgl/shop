@@ -6,7 +6,7 @@ import (
 	"shop/internal/api/middlewares/validator/dto_validator"
 )
 
-func RegisterNodeRoutes(app *fiber.App) {
+func RegisterNodeRoutes(app fiber.Router) {
 	app.Get("/nodes",
 		dto_validator.ValidatePaginationMiddleware(),
 		handlers.NodeHandler.GetAllNode,

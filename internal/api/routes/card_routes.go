@@ -6,7 +6,7 @@ import (
 	"shop/internal/api/middlewares/validator/dto_validator"
 )
 
-func RegisterCardRoutes(app *fiber.App) {
+func RegisterCardRoutes(app fiber.Router) {
 	app.Get("/cards/:id",
 		dto_validator.ValidateIdMiddleware(),
 		handlers.CardHandler.GetCardById,
