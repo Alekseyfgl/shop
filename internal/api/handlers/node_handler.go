@@ -51,6 +51,7 @@ func (h *nodeHandler) GetAllNode(c *fiber.Ctx) error {
 }
 
 func (h *nodeHandler) CreateNode(c *fiber.Ctx) error {
+	log.Info("CreateNode")
 	reqInterface := c.Locals("validatedBody")
 
 	body, ok := reqInterface.(dto.CreateNodeRequest)
@@ -58,8 +59,9 @@ func (h *nodeHandler) CreateNode(c *fiber.Ctx) error {
 		log.Error("Failed to retrieve validated request from context")
 		return http_error.NewHTTPError(fiber.StatusInternalServerError, "Internal Server Error", nil).Send(c)
 	}
-
+	log.Info("START service.NodeService.CreateNode(&body)")
 	size, err := service.NodeService.CreateNode(&body)
+	log.Info("FINISH service.NodeService.CreateNode(&body)")
 	if err != nil {
 		log.Error("Failed to create node", zap.Error(err))
 		return http_error.NewHTTPError(fiber.StatusInternalServerError, "Failed to create node", nil).Send(c)
@@ -87,7 +89,6 @@ func (h *nodeHandler) UpdateNode(c *fiber.Ctx) error {
 }
 
 func (h *nodeHandler) DeleteNode(c *fiber.Ctx) error {
-
 	// Retrieve article ID from context.
 	id := c.Locals("Id")
 	nodeIdIdStr, ok := id.(string)
