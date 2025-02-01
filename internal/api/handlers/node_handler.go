@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"go.uber.org/zap"
 	"shop/internal/api/dto"
@@ -51,6 +52,7 @@ func (h *nodeHandler) GetAllNode(c *fiber.Ctx) error {
 }
 
 func (h *nodeHandler) CreateNode(c *fiber.Ctx) error {
+	fmt.Println("---CreateNode---")
 	log.Info("CreateNode")
 	reqInterface := c.Locals("validatedBody")
 
