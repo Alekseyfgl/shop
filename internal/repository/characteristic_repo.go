@@ -48,7 +48,7 @@ func (r *characteristicRepository) GetAllCharacteristics(pageNumber, pageSize in
 		return nil, 0, err
 	}
 
-	rows, err := pg_conf.GetDB().Query("SELECT id, title, description FROM shop.characteristics ORDER BY id ASC LIMIT $1 OFFSET $2", pageSize, offset)
+	rows, err := pg_conf.GetDB().Query("SELECT id, title, description, is_visible FROM shop.characteristics ORDER BY id ASC LIMIT $1 OFFSET $2", pageSize, offset)
 	if err != nil {
 		log.Error("Failed to fetch characteristics", zap.Error(err))
 		return nil, 0, err
@@ -61,7 +61,7 @@ func (r *characteristicRepository) GetAllCharacteristics(pageNumber, pageSize in
 
 	scanFunc := func(rows *sql.Rows) (model.CharacteristicRow, error) {
 		var char model.CharacteristicRow
-		if err := rows.Scan(&char.ID, &char.Title, &char.Description); err != nil {
+		if err := rows.Scan(&char.ID, &char.Title, &char.Description, &char.IsVisible); err != nil {
 			return model.CharacteristicRow{}, err
 		}
 		return char, nil
@@ -96,8 +96,8 @@ func (r *characteristicRepository) CreateCharacteristics(data *dto.CreateCharact
 
 func (r *characteristicRepository) UpdateCharacteristics(data *model.CharacteristicRow) error {
 	_, err := pg_conf.GetDB().Exec(
-		"UPDATE shop.characteristics SET title = $1, description = $2 WHERE id = $3",
-		data.Title, data.Description, data.ID,
+		"UPDATE shop.characteristics SET title = $1, description = $2, is_visible = $3 WHERE id = $4",
+		data.Title, data.Description, data.IsVisible, data.ID,
 	)
 	return err
 }

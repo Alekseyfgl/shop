@@ -70,6 +70,7 @@ func (s *characteristicService) UpdateCharacteristic(dto *dto.UpdateCharacterist
 		ID:          dto.ID,
 		Title:       dto.Title,
 		Description: dto.Description,
+		IsVisible:   dto.IsVisible,
 	}
 
 	if err := repository.CharacteristicRepo.UpdateCharacteristics(&row); err != nil {
