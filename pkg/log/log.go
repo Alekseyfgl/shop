@@ -16,9 +16,9 @@ func InitLogger() {
 	config := zap.NewDevelopmentConfig()
 	config.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder // Colored levels
 	config.EncoderConfig.TimeKey = "timestamp"                          // Time key
-	config.EncoderConfig.CallerKey = "caller"                           // File and line key
-	config.EncoderConfig.MessageKey = "message"                         // Message key
-	config.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder        // Time format
+	//config.EncoderConfig.CallerKey = "caller"                           // File and line key
+	//config.EncoderConfig.MessageKey = "message"                         // Message key
+	//config.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder        // Time format
 	config.DisableStacktrace = true
 
 	baseLogger, err := config.Build()

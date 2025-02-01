@@ -29,7 +29,7 @@ func main() {
 	// Middleware: Global error handling
 	//app.Use(middlewares.ErrorHandlerMiddleware(container.Logger))
 	////Middleware: Request logging
-	//app.Use(middlewares.RequestLoggerMiddleware(container.Logger))
+	app.Use(middlewares.RequestLoggerMiddleware())
 	app.Use(middlewares.LimitQueryParamsMiddleware)
 
 	groupApi := app.Group("/api")

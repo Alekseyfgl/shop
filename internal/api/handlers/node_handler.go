@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"go.uber.org/zap"
 	"shop/internal/api/dto"
@@ -52,8 +51,6 @@ func (h *nodeHandler) GetAllNode(c *fiber.Ctx) error {
 }
 
 func (h *nodeHandler) CreateNode(c *fiber.Ctx) error {
-	fmt.Println("---CreateNode---")
-	log.Info("CreateNode")
 	reqInterface := c.Locals("validatedBody")
 
 	body, ok := reqInterface.(dto.CreateNodeRequest)
@@ -61,15 +58,13 @@ func (h *nodeHandler) CreateNode(c *fiber.Ctx) error {
 		log.Error("Failed to retrieve validated request from context")
 		return http_error.NewHTTPError(fiber.StatusInternalServerError, "Internal Server Error", nil).Send(c)
 	}
-	log.Info("START service.NodeService.CreateNode(&body)")
-	size, err := service.NodeService.CreateNode(&body)
-	log.Info("FINISH service.NodeService.CreateNode(&body)")
+	node, err := service.NodeService.CreateNode(&body)
 	if err != nil {
 		log.Error("Failed to create node", zap.Error(err))
 		return http_error.NewHTTPError(fiber.StatusInternalServerError, "Failed to create node", nil).Send(c)
 	}
 
-	return c.Status(fiber.StatusOK).JSON(size)
+	return c.Status(fiber.StatusOK).JSON(node)
 }
 
 func (h *nodeHandler) UpdateNode(c *fiber.Ctx) error {

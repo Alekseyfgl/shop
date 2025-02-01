@@ -44,19 +44,16 @@ func (s *nodeService) GetAllNode(pageNumber, pageSize int) (*model.Paginate[mode
 }
 
 func (s *nodeService) CreateNode(dto *dto.CreateNodeRequest) (*model.NodeRow, error) {
-	log.Info("START func (s *nodeService) CreateNode(dto *dto.CreateNodeRequest) (*model.NodeRow, error)")
 	_, err := repository.NodeTypeRepo.GetNodeTypeById(dto.NodeTypeId)
 	if err != nil {
 		log.Error("NodeTypeId not found", zap.Error(err))
 		return nil, err
 	}
-	log.Info("repository.NodeRepo.CreateNode(dto)")
 	createdID, err := repository.NodeRepo.CreateNode(dto)
 	if err != nil {
 		log.Error("Failed to create node", zap.Error(err))
 		return nil, err
 	}
-	log.Info("repository.NodeRepo.GetNodeById(createdID)")
 	nodeType, err := repository.NodeRepo.GetNodeById(createdID)
 	if err != nil {
 		return nil, err

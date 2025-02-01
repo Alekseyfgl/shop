@@ -1,6 +1,7 @@
 package middlewares
 
 import (
+	"shop/pkg/log"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -9,7 +10,7 @@ import (
 )
 
 // RequestLoggerMiddleware logs request processing time along with request and response IDs
-func RequestLoggerMiddleware(logger *zap.Logger) func(c *fiber.Ctx) error {
+func RequestLoggerMiddleware() func(c *fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
 		// Generate a unique request ID
 		requestID := uuid.New().String()
@@ -23,7 +24,7 @@ func RequestLoggerMiddleware(logger *zap.Logger) func(c *fiber.Ctx) error {
 		statusCode := c.Response().StatusCode()
 
 		// Log the request and response details
-		logger.Info("Request processed",
+		log.Info("Request processed",
 			zap.String("request_id", requestID),
 			zap.String("method", c.Method()),
 			zap.String("path", c.Path()),
