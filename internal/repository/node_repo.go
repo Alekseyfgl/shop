@@ -45,7 +45,7 @@ func (r *nodeRepository) GetAllNodes(pageNumber, pageSize int) ([]model.NodeRow,
 		return nil, 0, err
 	}
 
-	rows, err := pg_conf.GetDB().Query("SELECT * FROM shop.nodes ORDER BY id ASC LIMIT $1 OFFSET $2", pageSize, offset)
+	rows, err := pg_conf.GetDB().Query("SELECT id, title, node_type_id, description, created_at, updated_at, removed_at FROM shop.nodes ORDER BY id ASC LIMIT $1 OFFSET $2", pageSize, offset)
 	if err != nil {
 		log.Error("Failed to fetch node_types", zap.Error(err))
 		return nil, 0, err
@@ -57,19 +57,19 @@ func (r *nodeRepository) GetAllNodes(pageNumber, pageSize int) ([]model.NodeRow,
 	}()
 
 	scanFunc := func(rows *sql.Rows) (model.NodeRow, error) {
-		var size model.NodeRow
+		var node model.NodeRow
 		if err := rows.Scan(
-			&size.ID,
-			&size.Title,
-			&size.NodeTypeId,
-			&size.Description,
-			&size.CreatedAt,
-			&size.UpdatedAt,
-			&size.RemovedAt,
+			&node.ID,
+			&node.Title,
+			&node.NodeTypeId,
+			&node.Description,
+			&node.CreatedAt,
+			&node.UpdatedAt,
+			&node.RemovedAt,
 		); err != nil {
 			return model.NodeRow{}, err
 		}
-		return size, nil
+		return node, nil
 	}
 
 	nodes, err := utils.DecodeRows[model.NodeRow](rows, scanFunc)
@@ -124,7 +124,7 @@ func (r *nodeRepository) GetNodeById(id int) (*model.NodeRow, error) {
 	var node model.NodeRow
 
 	err := pg_conf.GetDB().QueryRow(
-		"SELECT * FROM shop.nodes WHERE id = $1",
+		"SELECT id, title, node_type_id, description, created_at, updated_at, removed_at FROM shop.nodes WHERE id = $1",
 		id,
 	).Scan(
 		&node.ID,
