@@ -47,28 +47,7 @@ CREATE TABLE shop.nodes
 CREATE INDEX idx_nodes_created_at
     ON shop.nodes (created_at);
 
--- =========================================
--- 5. Таблица units_measurement
---    (справочник единиц измерения)
--- =========================================
-CREATE TABLE shop.units_measurement
-(
-    id          SERIAL PRIMARY KEY,
-    unit        VARCHAR(10) NOT NULL, -- напр. "шт", "кг", "литр"
-    description TEXT
-);
 
--- =========================================
--- 6. Таблица quantity
---    (содержит связь единицы измерения + количество)
--- =========================================
-CREATE TABLE shop.quantity
-(
-    id                  SERIAL PRIMARY KEY,
-    unit_measurement_id INT NOT NULL REFERENCES shop.units_measurement (id)
-        ON DELETE CASCADE ON UPDATE CASCADE,
-    quantity            INT NOT NULL
-);
 
 CREATE TABLE shop.char_default_value
 (
