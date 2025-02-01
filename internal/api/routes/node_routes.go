@@ -11,7 +11,7 @@ func RegisterNodeRoutes(app fiber.Router) {
 		dto_validator.ValidatePaginationMiddleware(),
 		handlers.NodeHandler.GetAllNode,
 	)
-	app.Post("/nodes/create",
+	app.Post("/nodes",
 		dto_validator.ValidateCreateNodeMiddleware(),
 		handlers.NodeHandler.CreateNode,
 	)
