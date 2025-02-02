@@ -147,13 +147,11 @@ func (h *cardHandler) GetCardsByVector(c *fiber.Ctx) error {
 		return http_error.NewHTTPError(fiber.StatusInternalServerError, "Internal Server Error", nil).Send(c)
 	}
 
-	newID, err := service.CardService.GetCardsByVector(&body)
+	cards, err := service.CardService.GetCardsByVector(&body)
 	if err != nil {
 		log.Error("Failed to get cards by vector", zap.Error(err))
 		return http_error.NewHTTPError(fiber.StatusInternalServerError, "Failed to get cards", nil).Send(c)
 	}
 
-	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
-		"id": newID,
-	})
+	return c.Status(fiber.StatusCreated).JSON(cards)
 }
