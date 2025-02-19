@@ -10,6 +10,7 @@ import (
 	"shop/internal/model"
 	"shop/pkg/log"
 	"shop/pkg/utils"
+	"strconv"
 	"strings"
 )
 
@@ -180,10 +181,6 @@ func (r *cardRepository) GetAllCards(pageNumber, pageSize int, filters *[]model.
 	// -----------------------------------------------------------
 	// Считаем количество с учётом фильтров
 	// -----------------------------------------------------------
-	// Используем такой же набор JOINов, чтобы учесть c.title, cv.value и т.д.
-	// Обратите внимание на формирование placeholder'ов:
-	//   - В whereArgs могут находиться несколько значений, потому нужно их грамотно подставить в COUNT-запрос.
-
 	countQuery := fmt.Sprintf(`
 		SELECT COUNT(*)
 		FROM (
@@ -197,6 +194,9 @@ func (r *cardRepository) GetAllCards(pageNumber, pageSize int, filters *[]model.
 		) grouped_nodes;
 	`, whereClause)
 
+	// Логирование запроса подсчёта с аргументами
+	log.Info("Executing count query", zap.String("query", countQuery), zap.Any("args", whereArgs))
+
 	var totalCount int
 	if err := pg_conf.GetDB().QueryRow(countQuery, whereArgs...).Scan(&totalCount); err != nil {
 		log.Error("Failed to count cards with filters", zap.Error(err))
@@ -204,13 +204,10 @@ func (r *cardRepository) GetAllCards(pageNumber, pageSize int, filters *[]model.
 	}
 
 	// -----------------------------------------------------------
-	// Теперь формируем основной SELECT с пагинацией
+	// Формируем основной SELECT с пагинацией
 	// -----------------------------------------------------------
-	// Нужно аккуратно добавить аргументы LIMIT и OFFSET в конец.
-	// Поскольку в whereArgs у нас N аргументов, плейсхолдеры для LIMIT/OFFSET будут $N+1 и $N+2.
-
 	args := make([]interface{}, 0, len(whereArgs)+2)
-	args = append(args, whereArgs...) // сначала условия
+	args = append(args, whereArgs...)
 	args = append(args, pageSize)
 	args = append(args, offset)
 
@@ -222,7 +219,7 @@ func (r *cardRepository) GetAllCards(pageNumber, pageSize int, filters *[]model.
                n.updated_at   AS "updatedAt",
                n.removed_at   AS "removedAt",
                COALESCE(string_to_array(n.images, ','), '{}') AS "images",
-               nt.type        AS "nodeType",
+               nt.id          AS "nodeType", -- изменено с nt.type на nt.id
                nt.description AS "nodeTypeDescription",
                c.title        AS "characteristic",
                cv.value       AS "characteristicValue",
@@ -236,10 +233,13 @@ func (r *cardRepository) GetAllCards(pageNumber, pageSize int, filters *[]model.
         ORDER BY n.created_at DESC
         LIMIT $%d OFFSET $%d
     `,
-		whereClause,      // подставляем строку WHERE ... (может быть пустой, если фильтров нет)
-		len(whereArgs)+1, // плейсхолдер для LIMIT
-		len(whereArgs)+2, // плейсхолдер для OFFSET
+		whereClause,      // подставляем строку WHERE (может быть пустой, если фильтров нет)
+		len(whereArgs)+1, // placeholder для LIMIT
+		len(whereArgs)+2, // placeholder для OFFSET
 	)
+
+	// Логирование основного запроса с аргументами
+	log.Info("Executing select query", zap.String("query", selectQuery), zap.Any("args", args))
 
 	rows, err := pg_conf.GetDB().Query(selectQuery, args...)
 	if err != nil {
@@ -283,11 +283,13 @@ func (r *cardRepository) GetAllCards(pageNumber, pageSize int, filters *[]model.
 // buildWhereClause динамически формирует часть WHERE с placeholder’ами.
 // Пример фильтров:
 //
-//	 [
-//	     { Key: "Размеры", Values: "M" },
-//	     { Key: "Скидка",  Values: "" }
-//	 ]
-//	=> WHERE (c.title = $1 AND cv.value = $2) OR (c.title = $3)
+//	[
+//	    { Key: "Размеры",   Values: "M" },
+//	    { Key: "Скидка",    Values: "" },
+//	    { Key: "nodeType",  Values: 1 } // значение виде int
+//	]
+//
+// Если присутствует фильтр nodeType, то условие будет вида (nt.id = $X)
 func buildWhereClause(filters []model.CardFilter) (string, []interface{}) {
 	if len(filters) == 0 {
 		return "", nil
@@ -300,31 +302,40 @@ func buildWhereClause(filters []model.CardFilter) (string, []interface{}) {
 	)
 
 	for _, f := range filters {
+		// Обработка специального фильтра nodeType
+		if f.Key == "nodeTypeId" {
+			// Приводим значение к int. Если конвертация не удалась, фильтр пропускается.
+			nodeTypeID, err := strconv.Atoi(f.Values)
+			if err != nil {
+				log.Warn("Invalid nodeType filter value, skipping nodeType filter", zap.String("value", f.Values))
+				continue
+			}
+			conditions = append(conditions, fmt.Sprintf("(nt.id = $%d)", placeholderIndex))
+			args = append(args, nodeTypeID)
+			placeholderIndex++
+			continue
+		}
+
+		// Остальные фильтры
 		if f.Values == "" {
-			// Генерируем условие вида (c.title = $X)
+			// Условие вида (c.title = $X)
 			conditions = append(conditions, fmt.Sprintf("(c.title = $%d)", placeholderIndex))
 			args = append(args, f.Key)
-
 			placeholderIndex++
 		} else {
-			// Генерируем условие вида (c.title = $X AND cv.value = $Y)
-			cond := fmt.Sprintf("(c.title = $%d AND cv.value = $%d)", placeholderIndex, placeholderIndex+1)
-			conditions = append(conditions, cond)
-
+			// Условие вида (c.title = $X AND cv.value = $%d)
+			conditions = append(conditions, fmt.Sprintf("(c.title = $%d AND cv.value = $%d)", placeholderIndex, placeholderIndex+1))
 			args = append(args, f.Key, f.Values)
-
 			placeholderIndex += 2
 		}
 	}
 
-	// Если после обработки фильтров массив conditions пуст — ничего не делаем
 	if len(conditions) == 0 {
 		return "", nil
 	}
 
-	// Объединяем все условия через AND
-	where := "WHERE " + strings.Join(conditions, " AND ")
-	return where, args
+	whereClause := "WHERE " + strings.Join(conditions, " AND ")
+	return whereClause, args
 }
 
 // CreateCard реализует логику создания node и его характеристик.

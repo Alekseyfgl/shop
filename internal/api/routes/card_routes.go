@@ -12,6 +12,7 @@ func RegisterCardRoutes(app fiber.Router) {
 		handlers.CardHandler.GetCardById,
 	)
 	app.Get("/cards",
+		dto_validator.ValidateNodeTypeIdMiddleware(),
 		dto_validator.ValidatePaginationMiddleware(),
 		handlers.CardHandler.GetAllCards,
 	)
