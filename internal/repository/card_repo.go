@@ -194,9 +194,6 @@ func (r *cardRepository) GetAllCards(pageNumber, pageSize int, filters *[]model.
 		) grouped_nodes;
 	`, whereClause)
 
-	// Логирование запроса подсчёта с аргументами
-	log.Info("Executing count query", zap.String("query", countQuery), zap.Any("args", whereArgs))
-
 	var totalCount int
 	if err := pg_conf.GetDB().QueryRow(countQuery, whereArgs...).Scan(&totalCount); err != nil {
 		log.Error("Failed to count cards with filters", zap.Error(err))
@@ -237,9 +234,6 @@ func (r *cardRepository) GetAllCards(pageNumber, pageSize int, filters *[]model.
 		len(whereArgs)+1, // placeholder для LIMIT
 		len(whereArgs)+2, // placeholder для OFFSET
 	)
-
-	// Логирование основного запроса с аргументами
-	log.Info("Executing select query", zap.String("query", selectQuery), zap.Any("args", args))
 
 	rows, err := pg_conf.GetDB().Query(selectQuery, args...)
 	if err != nil {
