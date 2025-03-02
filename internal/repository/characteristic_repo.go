@@ -22,7 +22,7 @@ type CharacteristicRepositoryInterface interface {
 	DeleteCharacteristicsById(id int) error
 	GetCharacteristicsById(id int) (*model.CharacteristicRow, error)
 	CheckCharsByIds(ids []int) error
-	GetCharFilters() (*[]model.CharFiltersRow, error)
+	GetCharFilters(nodeTypeId int) (*[]model.CharFiltersRow, error)
 }
 
 func NewCharacteristicRepository() CharacteristicRepositoryInterface {
@@ -173,18 +173,41 @@ func (r *characteristicRepository) CheckCharsByIds(ids []int) error {
 	return nil
 }
 
-func (r *characteristicRepository) GetCharFilters() (*[]model.CharFiltersRow, error) {
-	// Выполняем запрос, чтобы получить все характеристики с указанными id
-	rows, err := pg_conf.GetDB().Query(
-		`
-			SELECT ch.id  "characteristicId",
-				   ch.title,
-				   ch.description,
-				   cdv.value
-			FROM shop.characteristics  ch
-			LEFT JOIN shop.char_default_value cdv on ch.id = cdv.characteristic_id
-			WHERE ch.is_visible = true`,
+func (r *characteristicRepository) GetCharFilters(nodeTypeId int) (*[]model.CharFiltersRow, error) {
+	// Базовая часть запроса (без условия по nodeTypeId)
+	baseQuery := `
+		SELECT DISTINCT ch.id AS characteristicId,
+		       ch.title,
+		       ch.description,
+		       cdv.value
+		FROM shop.characteristics AS ch
+		         JOIN shop.characteristic_values AS cv
+		           ON ch.id = cv.characteristic_id
+		         LEFT JOIN shop.char_default_value cdv
+		           ON ch.id = cdv.characteristic_id
+		         JOIN shop.nodes AS n
+		           ON n.id = cv.node_id
+		WHERE ch.is_visible = true
+	`
+
+	var (
+		rows *sql.Rows
+		err  error
 	)
+
+	// Если nodeTypeId == 0, убираем условие по nodeTypeId
+	if nodeTypeId == 0 {
+		query := baseQuery + `
+			ORDER BY ch.id;
+		`
+		rows, err = pg_conf.GetDB().Query(query)
+	} else {
+		query := baseQuery + `
+			AND n.node_type_id = $1
+			ORDER BY ch.id;
+		`
+		rows, err = pg_conf.GetDB().Query(query, nodeTypeId)
+	}
 
 	if err != nil {
 		log.Error("Failed to fetch filters", zap.Error(err))
@@ -196,6 +219,7 @@ func (r *characteristicRepository) GetCharFilters() (*[]model.CharFiltersRow, er
 		}
 	}()
 
+	// Функция для сканирования результатов в модель
 	scanFunc := func(rows *sql.Rows) (model.CharFiltersRow, error) {
 		var filter model.CharFiltersRow
 		if err := rows.Scan(&filter.CharacteristicId, &filter.Title, &filter.Description, &filter.Value); err != nil {
@@ -204,6 +228,7 @@ func (r *characteristicRepository) GetCharFilters() (*[]model.CharFiltersRow, er
 		return filter, nil
 	}
 
+	// Декодируем строки в срез структур
 	filters, err := utils.DecodeRows[model.CharFiltersRow](rows, scanFunc)
 	if err != nil {
 		log.Error("Failed to decode filters", zap.Error(err))

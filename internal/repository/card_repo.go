@@ -235,6 +235,8 @@ func (r *cardRepository) GetAllCards(pageNumber, pageSize int, filters *[]model.
 		len(whereArgs)+2, // placeholder для OFFSET
 	)
 
+	log.Info("Executing select query", zap.String("query", selectQuery), zap.Any("params", args))
+
 	rows, err := pg_conf.GetDB().Query(selectQuery, args...)
 	if err != nil {
 		log.Error("Failed to fetch cards", zap.Error(err))

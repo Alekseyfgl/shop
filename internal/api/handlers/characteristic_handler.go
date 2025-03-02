@@ -52,7 +52,15 @@ func (h *characteristicHandler) GetAllCharacteristics(c *fiber.Ctx) error {
 }
 
 func (h *characteristicHandler) GetCharForFilters(c *fiber.Ctx) error {
-	filters, err := service.CharacteristicService.GetCharForFilters()
+	nodeTypeIdInterface := c.Locals("nodeTypeId")
+	nodeTypeId, ok := nodeTypeIdInterface.(int)
+
+	if !ok {
+		log.Error("Failed to retrieve nodeTypeId from context")
+		return http_error.NewHTTPError(fiber.StatusInternalServerError, "Failed to fetch filters", nil).Send(c)
+	}
+
+	filters, err := service.CharacteristicService.GetCharForFilters(nodeTypeId)
 	if err != nil {
 		log.Error("Failed to fetch paginated filters", zap.Error(err))
 		return http_error.NewHTTPError(fiber.StatusInternalServerError, "Failed to fetch filters", nil).Send(c)

@@ -12,6 +12,7 @@ func RegisterCharacteristicRoutes(app fiber.Router) {
 		handlers.CharacteristicHandler.GetAllCharacteristics,
 	)
 	app.Get("/characteristics/filters",
+		dto_validator.ValidateNodeTypeIdMiddleware(),
 		handlers.CharacteristicHandler.GetCharForFilters,
 	)
 	app.Post("/characteristics",

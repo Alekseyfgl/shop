@@ -7,13 +7,14 @@ import (
 	"shop/internal/repository"
 	"shop/pkg/log"
 	"shop/pkg/utils"
+	"sort"
 )
 
 type characteristicService struct{}
 
 type CharacteristicServiceInterface interface {
 	GetAllCharacteristic(pageNumber, pageSize int) (*model.Paginate[model.CharacteristicRow], error)
-	GetCharForFilters() (*[]model.CharFilterResponse, error)
+	GetCharForFilters(nodeTypeId int) (*[]model.CharFilterResponse, error)
 	CreateCharacteristic(size *dto.CreateCharacteristicRequest) (*model.CharacteristicRow, error)
 	UpdateCharacteristic(size *dto.UpdateCharacteristicRequest) (*model.CharacteristicRow, error)
 	DeleteCharacteristic(id int) error
@@ -88,9 +89,9 @@ func (s *characteristicService) DeleteCharacteristic(id int) error {
 	return nil
 }
 
-func (s *characteristicService) GetCharForFilters() (*[]model.CharFilterResponse, error) {
+func (s *characteristicService) GetCharForFilters(nodeTypeId int) (*[]model.CharFilterResponse, error) {
 	// Получаем данные из репозитория
-	filters, err := repository.CharacteristicRepo.GetCharFilters()
+	filters, err := repository.CharacteristicRepo.GetCharFilters(nodeTypeId)
 	if err != nil {
 		return nil, err
 	}
@@ -119,6 +120,11 @@ func (s *characteristicService) GetCharForFilters() (*[]model.CharFilterResponse
 	for _, value := range grouped {
 		result = append(result, *value)
 	}
+
+	// Сортируем результат по возрастанию CharacteristicId
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].CharacteristicId < result[j].CharacteristicId
+	})
 
 	return &result, nil
 }

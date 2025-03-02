@@ -15,6 +15,7 @@ func ValidateNodeTypeIdMiddleware() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 
 		if !c.Context().QueryArgs().Has("nodeTypeId") {
+			c.Locals("nodeTypeId", 0)
 			return c.Next()
 		}
 
@@ -41,7 +42,7 @@ func ValidateNodeTypeIdMiddleware() fiber.Handler {
 		}
 
 		// При необходимости сохраним данные в контекст Fiber (для дальнейших хендлеров)
-		c.Locals("nodeType", nodeType)
+		c.Locals("nodeTypeId", nodeType.ID)
 
 		return c.Next()
 	}
