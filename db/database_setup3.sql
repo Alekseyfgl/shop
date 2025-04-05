@@ -40,7 +40,9 @@ CREATE TABLE shop.nodes
     created_at   TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at   TIMESTAMP NOT NULL DEFAULT NOW(),
     removed_at   TIMESTAMP          DEFAULT NULL,
-    images TEXT DEFAULT NULL
+    images TEXT DEFAULT NULL,
+    price_byn INT,
+    price_run INT
 );
 
 -- Индекс на created_at (если нужно часто искать по дате создания)
