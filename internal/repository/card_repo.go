@@ -332,7 +332,7 @@ func buildWhereClause(filters []model.CardFilter) (string, []interface{}) {
 			placeholderIndex++
 		} else {
 			// Условие вида (c.title = $X AND cv.value = $%d)
-			conditions = append(conditions, fmt.Sprintf("(c.title = $%d AND cv.value = $%d)", placeholderIndex, placeholderIndex+1))
+			conditions = append(conditions, fmt.Sprintf("(c.title = $%d OR cv.value = $%d)", placeholderIndex, placeholderIndex+1))
 			args = append(args, f.Key, f.Values)
 			placeholderIndex += 2
 		}
