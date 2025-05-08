@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
+	"strings"
 )
 
 type CardRow struct {
@@ -32,6 +34,7 @@ type CardResponse struct {
 	RemovedAt           *string            `json:"removedAt"`
 	PriceByn            *int               `json:"priceByn"`
 	PriceRub            *int               `json:"priceRub"`
+	Sale                *int               `json:"sale"`
 	Images              []string           `db:"images" json:"images"`
 	NodeType            string             `json:"nodeType"`
 	NodeTypeDescription *string            `json:"nodeTypeDescription"`
@@ -50,6 +53,7 @@ type CardFilter struct {
 	Values string
 }
 
+// MapperCardResponse maps rows of CardRow to grouped CardResponse slices.
 func MapperCardResponse(rows *[]CardRow) ([]CardResponse, error) {
 	if len(*rows) == 0 {
 		return nil, errors.New("card not found")
@@ -83,6 +87,37 @@ func MapperCardResponse(rows *[]CardRow) ([]CardResponse, error) {
 			addParam.AdditionalParams = &parsedField
 		}
 
+		// Обработка скидки: если название характеристики "Скидка", сохраняем в поле Sale и пропускаем группировку.
+		if strings.EqualFold(addParam.Title, "Скидка") {
+			saleVal, err := strconv.Atoi(addParam.Value)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse discount for NodeId %d: %w", nodeId, err)
+			}
+			if cg, exist := m[nodeId]; exist {
+				cg.card.Sale = &saleVal
+			} else {
+				newCard := CardResponse{
+					NodeId:              row.NodeId,
+					Title:               row.Title,
+					NodeDescription:     row.NodeDescription,
+					CreatedAt:           row.CreatedAt,
+					UpdatedAt:           row.UpdatedAt,
+					RemovedAt:           row.RemovedAt,
+					PriceByn:            row.PriceByn,
+					PriceRub:            row.PriceRub,
+					Sale:                &saleVal,
+					Images:              row.Images,
+					NodeType:            row.NodeType,
+					NodeTypeDescription: row.NodeTypeDescription,
+				}
+				m[nodeId] = &cardGroup{
+					card:   newCard,
+					groups: make(map[string][]Characteristic),
+				}
+			}
+			continue
+		}
+
 		// Если для данной ноды уже создана карточка – просто добавляем характеристику в нужную группу.
 		if cg, exist := m[nodeId]; exist {
 			cg.groups[addParam.Title] = append(cg.groups[addParam.Title], addParam)
@@ -100,7 +135,6 @@ func MapperCardResponse(rows *[]CardRow) ([]CardResponse, error) {
 				Images:              row.Images,
 				NodeType:            row.NodeType,
 				NodeTypeDescription: row.NodeTypeDescription,
-				// Поле Characteristics пока оставляем nil – заполнится после группировки.
 			}
 			groups := make(map[string][]Characteristic)
 			groups[addParam.Title] = []Characteristic{addParam}
