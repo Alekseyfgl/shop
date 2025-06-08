@@ -1,11 +1,12 @@
 package handlers
 
 import (
-	"github.com/gofiber/fiber/v2"
-	"github.com/google/uuid"
 	"shop/internal/api/dto"
 	"shop/pkg/http_error"
 	"shop/pkg/log"
+
+	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 )
 
 type orderHandler struct{}
@@ -23,15 +24,15 @@ var OrderHandler = NewOrderHandler()
 func (h *orderHandler) CreateOrder(c *fiber.Ctx) error {
 	reqInterface := c.Locals("validatedBody")
 
-	_, ok := reqInterface.(dto.OrderDTO)
+	_, ok := reqInterface.([]dto.OrderDTO)
 	if !ok {
 		log.Error("Failed to retrieve validated request from context")
 		return http_error.NewHTTPError(fiber.StatusInternalServerError, "Internal Server Error", nil).Send(c)
 	}
 
-	orderId := uuid.New().String()
-	// здесь можно вызвать сервис создания заказа и т.д.
+	// Генерируем ID для каждого заказа
 
+	orderId := uuid.New().String()
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"orderId": orderId,
 	})
