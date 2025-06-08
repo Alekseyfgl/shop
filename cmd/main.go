@@ -41,6 +41,7 @@ func main() {
 	routes.RegisterNodeTypeRoutes(groupApi)
 	routes.RegisterNodeRoutes(groupApi)
 	routes.RegisterCardRoutes(groupApi)
+	routes.RegisterOrderRoutes(groupApi)
 
 	// Start the server
 	port := env.GetEnv("SERV_PORT", "3000")
